@@ -51,6 +51,8 @@ Do not try to fix missing dependencies.
 Do not verify changes by executing Laravel, Composer, npm, Pint, PHPUnit, Pest, PHPStan, Larastan, Vite, or Filament commands.
 
 If a verification command cannot be run under these rules, skip it and report that it was skipped.
+Do not claim that forbidden validation commands were executed.
+If implementation progress must be recorded in a roadmap, update status according to code completion only and use owner-managed validation wording such as `Owner manual validation pending` or `Owner-accepted implementation; runtime validation handled manually after merge`.
 
 ## Laravel rules
 
