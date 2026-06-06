@@ -9,6 +9,7 @@ use VisibilityDetector\Core\Detector\CanonicalDetector;
 use VisibilityDetector\Core\Detector\DetectionContext;
 use VisibilityDetector\Core\Detector\IndexabilityDetector;
 use VisibilityDetector\Core\Detector\MetadataDetector;
+use VisibilityDetector\Core\Detector\StructuredDataDetector;
 use VisibilityDetector\Core\Detector\VisibilityResultDetector;
 use VisibilityDetector\Core\Page\PageFetcher;
 use VisibilityDetector\Core\Page\PageParser;
@@ -35,6 +36,7 @@ final readonly class VisibilityAnalyzer
         private IndexabilityDetector $indexabilityDetector = new IndexabilityDetector(),
         private MetadataDetector $metadataDetector = new MetadataDetector(),
         private CanonicalDetector $canonicalDetector = new CanonicalDetector(),
+        private StructuredDataDetector $structuredDataDetector = new StructuredDataDetector(),
     ) {
     }
 
@@ -132,6 +134,7 @@ final readonly class VisibilityAnalyzer
             if ($parsedPage instanceof ParsedPage) {
                 $detectorFindings = array_merge($detectorFindings, $this->metadataDetector->detect($context));
                 $detectorFindings = array_merge($detectorFindings, $this->canonicalDetector->detect($context));
+                $detectorFindings = array_merge($detectorFindings, $this->structuredDataDetector->detect($context));
             }
 
             $queryVisibilities[] = new QueryVisibility(

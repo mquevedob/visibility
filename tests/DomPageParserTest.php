@@ -228,6 +228,38 @@ final class DomPageParserTest extends TestCase
         self::assertSame('Widget Array Product', $parsed->productSchemaCandidates[0]['name']);
     }
 
+    public function test_extracts_json_ld_graph_product_and_offer_schema_candidates(): void
+    {
+        $parsed = $this->parser->parse($this->snapshot(<<<'HTML'
+            <html><head>
+                <script type="application/ld+json">
+                {
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Product",
+                            "name": "Graph Widget",
+                            "sku": "GRAPH-1"
+                        },
+                        {
+                            "@type": "Offer",
+                            "price": "29.99",
+                            "priceCurrency": "USD",
+                            "availability": "https://schema.org/InStock"
+                        }
+                    ]
+                }
+                </script>
+            </head><body>Widget</body></html>
+            HTML));
+
+        self::assertSame(['Product', 'Offer'], $parsed->schemaTypes);
+        self::assertCount(1, $parsed->productSchemaCandidates);
+        self::assertSame('Graph Widget', $parsed->productSchemaCandidates[0]['name']);
+        self::assertCount(1, $parsed->offerSchemaCandidates);
+        self::assertSame('29.99', $parsed->offerSchemaCandidates[0]['price']);
+    }
+
     public function test_malformed_json_ld_creates_parser_warning(): void
     {
         $parsed = $this->parser->parse($this->snapshot('<html><head><script type="application/ld+json">{"@type":"Product",</script></head><body>Widget</body></html>'));

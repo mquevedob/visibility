@@ -164,6 +164,23 @@ final class VisibilityAnalyzerTest extends TestCase
         self::assertContains('page.product_schema_missing', $this->findingCodes($report->queryVisibilities[0]));
     }
 
+    public function test_analyzer_report_includes_structured_data_detector_findings(): void
+    {
+        $query = $this->query();
+        $report = $this->analyzer(
+            resultSets: [$this->resultSet($query, [new SearchResult(position: 1, url: 'https://merchant.test/products/widget')])],
+            pageFetcher: new VisibilityAnalyzerRecordingFetcher(),
+            pageParser: new VisibilityAnalyzerParsedPageParser(new ParsedPage(
+                url: 'https://merchant.test/products/widget',
+                title: 'Widget',
+                metaDescription: 'Widget page',
+                h1: 'Widget',
+            )),
+        )->analyze($this->product(), [$query]);
+
+        self::assertContains('schema.product_missing', $this->findingCodes($report->queryVisibilities[0]));
+    }
+
     public function test_analyzer_preserves_parser_warnings(): void
     {
         $query = $this->query();
