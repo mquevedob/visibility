@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace VisibilityDetector\Core\Detector;
 
+use DateTimeImmutable;
+use Throwable;
 use VisibilityDetector\Core\Page\PageSnapshot;
 use VisibilityDetector\Core\Page\ParsedPage;
 use VisibilityDetector\Core\Report\Finding;
@@ -11,9 +13,14 @@ use VisibilityDetector\Core\Url\UrlNormalizer;
 
 final readonly class IndexabilityDetector implements Detector
 {
-    public function __construct(
-        private UrlNormalizer $normalizer = new UrlNormalizer(),
-    ) {
+    private UrlNormalizer $normalizer;
+
+    private DateTimeImmutable $now;
+
+    public function __construct(?UrlNormalizer $normalizer = null, ?DateTimeImmutable $now = null)
+    {
+        $this->normalizer = $normalizer ?? new UrlNormalizer();
+        $this->now = $now ?? new DateTimeImmutable('now');
     }
 
     /**
@@ -120,26 +127,44 @@ final readonly class IndexabilityDetector implements Detector
         $findings = [];
         $evidence = $this->parsedPageEvidence($context, $parsedPage);
 
-        if ($this->directivesContainNoindex($parsedPage->robotsDirectives)) {
+        $metaNoindexDirective = $this->firstDirectiveByName($parsedPage->robotsDirectives, 'noindex');
+        if ($metaNoindexDirective !== null) {
             $findings[] = new Finding(
                 code: 'page.noindex_meta',
                 severity: 'high',
                 confidence: 0.95,
                 message: 'The parsed page contains a meta robots noindex directive.',
-                evidence: $evidence + ['robotsDirectives' => $parsedPage->robotsDirectives],
+                evidence: $evidence + $this->robotsEvidence('meta_robots', $metaNoindexDirective, $parsedPage->robotsDirectives),
                 recommendation: 'Remove noindex from the page meta robots directives if the product page should be indexed.',
             );
         }
 
-        if ($this->directivesContainNoindex($parsedPage->xRobotsDirectives)) {
+        $xRobotsNoindexDirective = $this->firstDirectiveByName($parsedPage->xRobotsDirectives, 'noindex');
+        if ($xRobotsNoindexDirective !== null) {
             $findings[] = new Finding(
                 code: 'page.noindex_x_robots',
                 severity: 'high',
                 confidence: 0.95,
                 message: 'The parsed page contains an X-Robots-Tag noindex directive.',
-                evidence: $evidence + ['xRobotsDirectives' => $parsedPage->xRobotsDirectives],
+                evidence: $evidence + $this->robotsEvidence('x_robots_tag', $xRobotsNoindexDirective, $parsedPage->xRobotsDirectives),
                 recommendation: 'Remove noindex from X-Robots-Tag headers if the product page should be indexed.',
             );
+        }
+
+        foreach ($this->robotsNoneFindings($evidence, 'meta_robots', $parsedPage->robotsDirectives) as $finding) {
+            $findings[] = $finding;
+        }
+
+        foreach ($this->robotsNoneFindings($evidence, 'x_robots_tag', $parsedPage->xRobotsDirectives) as $finding) {
+            $findings[] = $finding;
+        }
+
+        foreach ($this->unavailableAfterFindings($evidence, 'meta_robots', $parsedPage->robotsDirectives) as $finding) {
+            $findings[] = $finding;
+        }
+
+        foreach ($this->unavailableAfterFindings($evidence, 'x_robots_tag', $parsedPage->xRobotsDirectives) as $finding) {
+            $findings[] = $finding;
         }
 
         if ($parsedPage->canonicalUrl !== null && trim($parsedPage->canonicalUrl) !== '' && !$this->canonicalMatchesProduct($context, $parsedPage->canonicalUrl)) {
@@ -163,32 +188,163 @@ final readonly class IndexabilityDetector implements Detector
     /**
      * @param array<int, mixed> $directives
      */
-    private function directivesContainNoindex(array $directives): bool
+    private function firstDirectiveByName(array $directives, string $expectedName): ?string
     {
         foreach ($directives as $directive) {
-            if ($this->isNoindexDirective($directive)) {
-                return true;
+            if (is_string($directive) && $this->directiveName($directive) === $expectedName) {
+                return trim($directive);
             }
         }
 
-        return false;
+        return null;
     }
 
-    private function isNoindexDirective(mixed $directive): bool
+    private function directiveName(string $directive): string
     {
-        if (!is_string($directive)) {
-            return false;
+        $normalized = strtolower(trim($directive));
+        $parts = explode(':', $normalized, 2);
+
+        if (count($parts) === 2 && trim($parts[0]) !== '') {
+            return trim($parts[1]);
         }
 
-        $directive = strtolower(trim($directive));
+        return $normalized;
+    }
 
-        if ($directive === 'noindex') {
-            return true;
+    /**
+     * @param array<string, mixed> $baseEvidence
+     * @param array<int, mixed> $directives
+     * @return array<int, Finding>
+     */
+    private function robotsNoneFindings(array $baseEvidence, string $source, array $directives): array
+    {
+        $directive = $this->firstDirectiveByName($directives, 'none');
+        if ($directive === null) {
+            return [];
+        }
+
+        return [new Finding(
+            code: 'page.robots_none',
+            severity: 'high',
+            confidence: 0.95,
+            message: 'The parsed page contains a robots none directive, which is equivalent to noindex,nofollow.',
+            evidence: $baseEvidence + $this->robotsEvidence($source, $directive, $directives),
+            recommendation: 'Remove the robots none directive if the product page should be indexed and followed.',
+        )];
+    }
+
+    /**
+     * @param array<string, mixed> $baseEvidence
+     * @param array<int, mixed> $directives
+     * @return array<int, Finding>
+     */
+    private function unavailableAfterFindings(array $baseEvidence, string $source, array $directives): array
+    {
+        $findings = [];
+
+        foreach ($directives as $directive) {
+            if (!is_string($directive)) {
+                continue;
+            }
+
+            $dateText = $this->unavailableAfterDateText($directive);
+            if ($dateText === null) {
+                continue;
+            }
+
+            $parsedDate = $this->parseHttpDate($dateText);
+            $evidence = $baseEvidence + $this->robotsEvidence($source, trim($directive), $directives, $parsedDate);
+
+            if ($parsedDate === null) {
+                $findings[] = new Finding(
+                    code: 'page.unavailable_after_invalid',
+                    severity: 'medium',
+                    confidence: 0.9,
+                    message: 'The parsed page contains an unavailable_after robots directive with an invalid HTTP-date.',
+                    evidence: $evidence,
+                    recommendation: 'Replace unavailable_after with a valid HTTP-date or remove it if the product page should remain indexable.',
+                );
+                continue;
+            }
+
+            if ($parsedDate < $this->now) {
+                $findings[] = new Finding(
+                    code: 'page.unavailable_after_expired',
+                    severity: 'high',
+                    confidence: 0.95,
+                    message: 'The parsed page contains an expired unavailable_after robots directive.',
+                    evidence: $evidence,
+                    recommendation: 'Remove or update expired unavailable_after directives if the product page should be indexed.',
+                );
+            }
+        }
+
+        return $findings;
+    }
+
+    private function unavailableAfterDateText(string $directive): ?string
+    {
+        $normalized = strtolower(trim($directive));
+        $prefix = 'unavailable_after:';
+
+        if (str_starts_with($normalized, $prefix)) {
+            return trim(substr(trim($directive), strlen($prefix)));
         }
 
         $parts = explode(':', $directive, 2);
+        if (count($parts) !== 2 || trim($parts[0]) === '') {
+            return null;
+        }
 
-        return count($parts) === 2 && trim($parts[0]) !== '' && trim($parts[1]) === 'noindex';
+        $botDirective = trim($parts[1]);
+        if (!str_starts_with(strtolower($botDirective), $prefix)) {
+            return null;
+        }
+
+        return trim(substr($botDirective, strlen($prefix)));
+    }
+
+    private function parseHttpDate(string $dateText): ?DateTimeImmutable
+    {
+        if (trim($dateText) === '') {
+            return null;
+        }
+
+        $parsedDate = DateTimeImmutable::createFromFormat(DATE_RFC7231, $dateText);
+        $parseErrors = DateTimeImmutable::getLastErrors();
+
+        if ($parsedDate instanceof DateTimeImmutable && ($parseErrors === false || ($parseErrors['warning_count'] === 0 && $parseErrors['error_count'] === 0))) {
+            return $parsedDate;
+        }
+
+        try {
+            return new DateTimeImmutable($dateText);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param array<int, mixed> $directives
+     * @return array<string, mixed>
+     */
+    private function robotsEvidence(string $source, string $directive, array $directives, ?DateTimeImmutable $parsedDate = null): array
+    {
+        $evidence = [
+            'source' => $source,
+            'directive' => $directive,
+            $source === 'meta_robots' ? 'robotsDirectives' : 'xRobotsDirectives' => $directives,
+        ];
+
+        if ($parsedDate !== null) {
+            $evidence['parsedDate'] = $parsedDate->format(DATE_ATOM);
+        }
+
+        if (str_starts_with(strtolower($this->directiveName($directive)), 'unavailable_after')) {
+            $evidence['referenceDate'] = $this->now->format(DATE_ATOM);
+        }
+
+        return $evidence;
     }
 
     private function canonicalMatchesProduct(DetectionContext $context, string $canonicalUrl): bool

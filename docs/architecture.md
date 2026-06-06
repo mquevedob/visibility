@@ -403,10 +403,13 @@ Finding codes:
 
 Finding codes:
 
-- `indexability.noindex_meta`
-- `indexability.noindex_x_robots_tag`
-- `indexability.robots_blocked`
-- `indexability.unavailable_after_expired`
+For v0.1 compatibility with Phase 8, page/indexability diagnostics use the stable `page.*` namespace rather than `indexability.*`.
+
+- `page.noindex_meta`
+- `page.noindex_x_robots`
+- `page.robots_none`
+- `page.unavailable_after_expired`
+- `page.unavailable_after_invalid`
 
 For v0.1, robots.txt support may be fixture-driven or deferred to a separate task, but the detector code should leave room for robots evidence.
 
