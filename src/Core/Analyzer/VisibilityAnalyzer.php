@@ -6,6 +6,7 @@ namespace VisibilityDetector\Core\Analyzer;
 
 use InvalidArgumentException;
 use VisibilityDetector\Core\Detector\CanonicalDetector;
+use VisibilityDetector\Core\Detector\ContentAlignmentDetector;
 use VisibilityDetector\Core\Detector\DetectionContext;
 use VisibilityDetector\Core\Detector\IndexabilityDetector;
 use VisibilityDetector\Core\Detector\MetadataDetector;
@@ -37,6 +38,7 @@ final readonly class VisibilityAnalyzer
         private MetadataDetector $metadataDetector = new MetadataDetector(),
         private CanonicalDetector $canonicalDetector = new CanonicalDetector(),
         private StructuredDataDetector $structuredDataDetector = new StructuredDataDetector(),
+        private ContentAlignmentDetector $contentAlignmentDetector = new ContentAlignmentDetector(),
     ) {
     }
 
@@ -135,6 +137,7 @@ final readonly class VisibilityAnalyzer
                 $detectorFindings = array_merge($detectorFindings, $this->metadataDetector->detect($context));
                 $detectorFindings = array_merge($detectorFindings, $this->canonicalDetector->detect($context));
                 $detectorFindings = array_merge($detectorFindings, $this->structuredDataDetector->detect($context));
+                $detectorFindings = array_merge($detectorFindings, $this->contentAlignmentDetector->detect($context));
             }
 
             $queryVisibilities[] = new QueryVisibility(

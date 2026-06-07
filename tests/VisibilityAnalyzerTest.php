@@ -218,6 +218,27 @@ final class VisibilityAnalyzerTest extends TestCase
         self::assertContains('canonical.points_to_other_url', $this->findingCodes($report->queryVisibilities[0]));
     }
 
+
+    public function test_analyzer_report_includes_content_alignment_detector_findings(): void
+    {
+        $query = $this->query();
+        $report = $this->analyzer(
+            resultSets: [$this->resultSet($query, [new SearchResult(position: 1, url: 'https://merchant.test/products/widget')])],
+            pageFetcher: new VisibilityAnalyzerRecordingFetcher(),
+            pageParser: new VisibilityAnalyzerParsedPageParser(new ParsedPage(
+                url: 'https://merchant.test/products/widget',
+                title: 'Generic product',
+                metaDescription: 'A complete product description with enough visible characters for this deterministic check.',
+                h1: 'Generic product',
+                bodyTextSummary: 'Generic body copy.',
+                productSchemaCandidates: [['@type' => 'Product']],
+                offerSchemaCandidates: [['@type' => 'Offer']],
+            )),
+        )->analyze($this->product(expectedTerms: ['Premium Widget']), [$query]);
+
+        self::assertContains('content.title_missing_product_terms', $this->findingCodes($report->queryVisibilities[0]));
+    }
+
     public function test_analyzer_can_run_without_page_fetcher_and_emits_deterministic_skipped_finding(): void
     {
         $query = $this->query();
@@ -291,9 +312,12 @@ final class VisibilityAnalyzerTest extends TestCase
         );
     }
 
-    private function product(): ProductSubject
+    /**
+     * @param array<int, string> $expectedTerms
+     */
+    private function product(array $expectedTerms = []): ProductSubject
     {
-        return new ProductSubject(expectedUrl: 'https://merchant.test/products/widget');
+        return new ProductSubject(expectedUrl: 'https://merchant.test/products/widget', expectedTerms: $expectedTerms);
     }
 
     private function query(string $text = 'buy widget'): SearchQuery
