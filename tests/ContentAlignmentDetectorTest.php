@@ -112,15 +112,12 @@ final class ContentAlignmentDetectorTest extends TestCase
         self::assertNotContains('content.body_missing_product_terms', $this->codes($findings));
     }
 
-    public function test_blank_expected_terms_are_ignored(): void
+    public function test_trimmed_duplicate_expected_terms_do_not_cause_false_positives(): void
     {
-        $findings = (new ContentAlignmentDetector())->detect($this->context(
-            $this->productWithExpectedTermsUnchecked(['  ', 'Widget', '']),
-            $this->page(
-                title: 'Widget page',
-                h1: 'Widget',
-                bodyTextSummary: 'Widget body copy.',
-            ),
+        $findings = $this->detect(['  Widget  ', 'Widget'], $this->page(
+            title: 'Widget page',
+            h1: 'Widget',
+            bodyTextSummary: 'Widget body copy.',
         ));
 
         self::assertNotContains('content.title_missing_product_terms', $this->codes($findings));
@@ -179,35 +176,6 @@ final class ContentAlignmentDetectorTest extends TestCase
             h1: $h1,
             bodyTextSummary: $bodyTextSummary,
         );
-    }
-
-    /**
-     * @param array<int, string> $expectedTerms
-     */
-    private function productWithExpectedTermsUnchecked(array $expectedTerms): ProductSubject
-    {
-        $reflection = new ReflectionClass(ProductSubject::class);
-        $product = $reflection->newInstanceWithoutConstructor();
-
-        foreach ([
-            'expectedUrl' => 'https://merchant.test/products/widget',
-            'id' => null,
-            'name' => null,
-            'brand' => null,
-            'sku' => null,
-            'category' => null,
-            'acceptableUrlVariants' => [],
-            'expectedTerms' => $expectedTerms,
-            'commercialPriority' => null,
-            'commercialValue' => null,
-            'price' => null,
-            'currency' => null,
-            'stockStatus' => null,
-        ] as $property => $value) {
-            $reflection->getProperty($property)->setValue($product, $value);
-        }
-
-        return $product;
     }
 
     /**
