@@ -1,0 +1,38 @@
+{
+    "query": {
+        "text": "acme waterproof trail running shoes",
+        "provider": "static-fixture",
+        "locale": "en_US",
+        "device": "desktop",
+        "intent": "category_product",
+        "expectedVisibility": true,
+        "priority": "critical",
+        "reason": "High-value launch product should appear for branded category demand."
+    },
+    "capturedAt": "2026-01-01T00:00:00+00:00",
+    "results": [
+        {
+            "position": 1,
+            "url": "https://example.test/p/aurora-trail-shoe",
+            "title": "Aurora Trail Shoe | Acme Outdoor",
+            "snippet": "Shop the Aurora Trail Shoe from Acme Outdoor on the short product URL.",
+            "resultType": "organic"
+        },
+        {
+            "position": 2,
+            "url": "https://example.test/collections/trail-running-shoes",
+            "title": "Trail Running Shoes | Acme Outdoor",
+            "snippet": "Shop all Acme Outdoor trail running shoes for wet and technical terrain.",
+            "resultType": "organic"
+        },
+        {
+            "position": 3,
+            "url": "https://reviews.example.test/best-waterproof-trail-running-shoes",
+            "title": "Best Waterproof Trail Running Shoes",
+            "snippet": "Independent reviews of waterproof trail running shoes for 2026.",
+            "resultType": "organic"
+        }
+    ],
+    "warnings": [],
+    "limitations": []
+}
