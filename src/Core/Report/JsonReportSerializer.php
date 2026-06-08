@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace VisibilityDetector\Core\Report;
+
+use DateTimeImmutable;
+use DateTimeZone;
+use JsonException;
+
+final readonly class JsonReportSerializer implements ReportSerializer
+{
+    private const ENCODE_OPTIONS = JSON_THROW_ON_ERROR
+        | JSON_PRETTY_PRINT
+        | JSON_UNESCAPED_SLASHES
+        | JSON_UNESCAPED_UNICODE;
+
+    /**
+     * @throws JsonException
+     */
+    public function serialize(VisibilityReport $report, ?DateTimeImmutable $generatedAt = null): string
+    {
+        $payload = $report->toArray();
+        $payload['generatedAt'] = $this->normalizeGeneratedAt($generatedAt)->format(DATE_ATOM);
+
+        return json_encode($payload, self::ENCODE_OPTIONS);
+    }
+
+    private function normalizeGeneratedAt(?DateTimeImmutable $generatedAt): DateTimeImmutable
+    {
+        return ($generatedAt ?? new DateTimeImmutable())->setTimezone(new DateTimeZone('UTC'));
+    }
+}
