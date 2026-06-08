@@ -77,6 +77,8 @@ Evaluation is deterministic and one-product scoped:
 
 The top-level `urlEvidence` report section summarizes these roles for the analyzed product. Query-level `urlMatch` evidence preserves each query's `matchedUrl`, and `pageSnapshot` preserves the fetcher's `requestedUrl` and `finalUrl`.
 
+In reports with multiple query visibilities, `urlEvidence.matchedUrls` may include more than one preserved search-result URL. `urlEvidence.requestedUrl`, `urlEvidence.finalUrl`, and `urlEvidence.canonicalUrl` describe the single page snapshot fetched and parsed by the analyzer for the product.
+
 ### Reading the JSON output
 
 The main output sections are:
