@@ -51,6 +51,40 @@ final class JsonReportSerializerTest extends TestCase
         self::assertSame('2026-06-07T10:15:30+00:00', $this->decode($json)['generatedAt']);
     }
 
+    public function test_explicit_generated_at_overrides_report_generated_at_and_normalizes_to_utc(): void
+    {
+        $json = $this->serializer()->serialize(
+            $this->report(generatedAt: '2025-01-01T00:00:00+00:00'),
+            new DateTimeImmutable('2026-06-07 12:15:30', new DateTimeZone('Europe/Madrid')),
+        );
+
+        self::assertSame('2026-06-07T10:15:30+00:00', $this->decode($json)['generatedAt']);
+    }
+
+    public function test_serializer_preserves_existing_report_generated_at_without_override(): void
+    {
+        $json = $this->serializer()->serialize(
+            $this->report(generatedAt: '2025-01-01T00:00:00-05:00'),
+        );
+
+        self::assertSame('2025-01-01T00:00:00-05:00', $this->decode($json)['generatedAt']);
+    }
+
+    public function test_serializer_generates_current_time_only_when_report_has_no_generated_at(): void
+    {
+        $before = time();
+
+        $json = $this->serializer()->serialize($this->report());
+
+        $after = time();
+        $payload = $this->decode($json);
+        $generatedAt = new DateTimeImmutable($payload['generatedAt']);
+
+        self::assertNotSame('2025-01-01T00:00:00+00:00', $payload['generatedAt']);
+        self::assertGreaterThanOrEqual($before, $generatedAt->getTimestamp());
+        self::assertLessThanOrEqual($after, $generatedAt->getTimestamp());
+    }
+
     public function test_json_contains_product_expected_url_and_commercial_context(): void
     {
         $payload = $this->serializedPayload();
@@ -163,7 +197,7 @@ final class JsonReportSerializerTest extends TestCase
         ));
     }
 
-    private function report(): VisibilityReport
+    private function report(?string $generatedAt = null): VisibilityReport
     {
         $query = new SearchQuery(
             text: 'buy café widget',
@@ -241,6 +275,7 @@ final class JsonReportSerializerTest extends TestCase
             ),
             summaryFindings: [$finding],
             warnings: ['report warning'],
+            generatedAt: $generatedAt,
             summary: new ReportSummary(
                 overallStatus: 'visible',
                 overallPriority: 'high',

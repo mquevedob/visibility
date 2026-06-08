@@ -21,13 +21,18 @@ final readonly class JsonReportSerializer implements ReportSerializer
     public function serialize(VisibilityReport $report, ?DateTimeImmutable $generatedAt = null): string
     {
         $payload = $report->toArray();
-        $payload['generatedAt'] = $this->normalizeGeneratedAt($generatedAt)->format(DATE_ATOM);
+
+        if ($generatedAt !== null) {
+            $payload['generatedAt'] = $this->normalizeGeneratedAt($generatedAt)->format(DATE_ATOM);
+        } elseif (!array_key_exists('generatedAt', $payload) || $payload['generatedAt'] === null) {
+            $payload['generatedAt'] = $this->normalizeGeneratedAt(new DateTimeImmutable())->format(DATE_ATOM);
+        }
 
         return json_encode($payload, self::ENCODE_OPTIONS);
     }
 
-    private function normalizeGeneratedAt(?DateTimeImmutable $generatedAt): DateTimeImmutable
+    private function normalizeGeneratedAt(DateTimeImmutable $generatedAt): DateTimeImmutable
     {
-        return ($generatedAt ?? new DateTimeImmutable())->setTimezone(new DateTimeZone('UTC'));
+        return $generatedAt->setTimezone(new DateTimeZone('UTC'));
     }
 }
