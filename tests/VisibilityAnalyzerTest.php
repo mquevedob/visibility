@@ -14,6 +14,8 @@ use VisibilityDetector\Core\Page\PageParser;
 use VisibilityDetector\Core\Page\PageSnapshot;
 use VisibilityDetector\Core\Page\ParsedPage;
 use VisibilityDetector\Core\Product\ProductSubject;
+use VisibilityDetector\Core\Report\Finding;
+use VisibilityDetector\Core\Report\QueryVisibility;
 use VisibilityDetector\Core\Search\SearchQuery;
 use VisibilityDetector\Core\Search\SearchResult;
 use VisibilityDetector\Core\Search\SearchResultSet;
@@ -161,7 +163,11 @@ final class VisibilityAnalyzerTest extends TestCase
         )->analyze($this->product(), [$query]);
 
         self::assertContains('page.title_missing', $this->findingCodes($report->queryVisibilities[0]));
-        self::assertContains('page.product_schema_missing', $this->findingCodes($report->queryVisibilities[0]));
+        self::assertContains('schema.product_missing', $this->findingCodes($report->queryVisibilities[0]));
+        self::assertNotContains('page.product_schema_missing', $this->findingCodes($report->queryVisibilities[0]));
+
+        $finding = $this->findingByCode($report->queryVisibilities[0], 'schema.product_missing');
+        self::assertSame('page.product_schema_missing', $finding->evidence['suppressedDuplicateFindings'][0]['code']);
     }
 
     public function test_analyzer_report_includes_structured_data_detector_findings(): void
@@ -179,6 +185,7 @@ final class VisibilityAnalyzerTest extends TestCase
         )->analyze($this->product(), [$query]);
 
         self::assertContains('schema.product_missing', $this->findingCodes($report->queryVisibilities[0]));
+        self::assertNotContains('page.product_schema_missing', $this->findingCodes($report->queryVisibilities[0]));
     }
 
     public function test_analyzer_preserves_parser_warnings(): void
@@ -216,6 +223,11 @@ final class VisibilityAnalyzerTest extends TestCase
         )->analyze($this->product(), [$query]);
 
         self::assertContains('canonical.points_to_other_url', $this->findingCodes($report->queryVisibilities[0]));
+        self::assertNotContains('page.canonical_mismatch', $this->findingCodes($report->queryVisibilities[0]));
+
+        $finding = $this->findingByCode($report->queryVisibilities[0], 'canonical.points_to_other_url');
+        self::assertSame('page.canonical_mismatch', $finding->evidence['suppressedDuplicateFindings'][0]['code']);
+        self::assertSame('https://merchant.test/products/other-widget', $finding->evidence['suppressedDuplicateFindings'][0]['evidence']['canonicalUrl']);
     }
 
 
@@ -334,12 +346,23 @@ final class VisibilityAnalyzerTest extends TestCase
         return new SearchResultSet(query: $query, results: $results, warnings: $warnings);
     }
 
+    private function findingByCode(QueryVisibility $queryVisibility, string $code): Finding
+    {
+        foreach ($queryVisibility->findings as $finding) {
+            if ($finding->code === $code) {
+                return $finding;
+            }
+        }
+
+        self::fail('Finding not found: ' . $code);
+    }
+
     /**
      * @return array<int, string>
      */
-    private function findingCodes(VisibilityDetector\Core\Report\QueryVisibility $visibility): array
+    private function findingCodes(QueryVisibility $visibility): array
     {
-        return array_map(static fn (VisibilityDetector\Core\Report\Finding $finding): string => $finding->code, $visibility->findings);
+        return array_map(static fn (Finding $finding): string => $finding->code, $visibility->findings);
     }
 }
 

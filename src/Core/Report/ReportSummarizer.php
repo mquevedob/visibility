@@ -131,6 +131,11 @@ final readonly class ReportSummarizer
             }
 
             $summaryIndex = $indexesByKey[$key];
+            if ($this->preferSummaryFinding($rankedFinding['finding']->code, $summaryFindings[$summaryIndex]['finding']->code)) {
+                $rankedFinding['affectedQueries'] = $summaryFindings[$summaryIndex]['affectedQueries'];
+                $summaryFindings[$summaryIndex] = $rankedFinding;
+            }
+
             if (!in_array($affectedQuery, $summaryFindings[$summaryIndex]['affectedQueries'], true)) {
                 $summaryFindings[$summaryIndex]['affectedQueries'][] = $affectedQuery;
                 sort($summaryFindings[$summaryIndex]['affectedQueries']);
@@ -146,15 +151,43 @@ final readonly class ReportSummarizer
     private function summaryFindingKey(array $rankedFinding): string
     {
         $finding = $rankedFinding['finding'];
-        $keyParts = [$finding->code];
+        $rootCauseCode = $this->summaryRootCauseCode($finding->code);
+        $keyParts = [$rootCauseCode];
 
-        if ($this->isQuerySpecificFinding($finding->code)) {
+        if ($this->isQuerySpecificFinding($finding->code) || $this->isDuplicateTaxonomyFinding($finding->code)) {
             $keyParts[] = $rankedFinding['queryVisibility']->query->text;
         }
 
-        $keyParts[] = $this->stableEvidenceHash($finding->evidence, $this->isQuerySpecificFinding($finding->code));
+        if (!$this->isDuplicateTaxonomyFinding($finding->code)) {
+            $keyParts[] = $this->stableEvidenceHash($finding->evidence, $this->isQuerySpecificFinding($finding->code));
+        }
 
         return implode("\n", $keyParts);
+    }
+
+    private function preferSummaryFinding(string $candidateCode, string $currentCode): bool
+    {
+        return ($candidateCode === 'canonical.points_to_other_url' && $currentCode === 'page.canonical_mismatch')
+            || ($candidateCode === 'schema.product_missing' && $currentCode === 'page.product_schema_missing');
+    }
+
+    private function summaryRootCauseCode(string $code): string
+    {
+        return match ($code) {
+            'page.canonical_mismatch' => 'canonical.points_to_other_url',
+            'page.product_schema_missing' => 'schema.product_missing',
+            default => $code,
+        };
+    }
+
+    private function isDuplicateTaxonomyFinding(string $code): bool
+    {
+        return in_array($code, [
+            'page.canonical_mismatch',
+            'canonical.points_to_other_url',
+            'page.product_schema_missing',
+            'schema.product_missing',
+        ], true);
     }
 
     private function isQuerySpecificFinding(string $code): bool

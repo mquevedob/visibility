@@ -102,6 +102,32 @@ final class ReportSummarizerTest extends TestCase
         self::assertSame('visibility_quality', $summary->topProbableCauses[0]['category']);
     }
 
+    public function test_summary_prefers_primary_canonical_finding_for_duplicate_root_cause(): void
+    {
+        $summary = $this->summarizer()->summarize($this->product(), [
+            $this->queryVisibility(findings: [
+                $this->finding('page.canonical_mismatch', 'medium', evidence: ['canonicalUrl' => 'https://merchant.test/products/other-widget']),
+                $this->finding('canonical.points_to_other_url', 'high', evidence: ['offendingCanonicalUrl' => 'https://merchant.test/products/other-widget']),
+            ]),
+        ]);
+
+        self::assertSame(['canonical.points_to_other_url'], array_column($summary->topProbableCauses, 'code'));
+        self::assertSame(['canonical.points_to_other_url'], array_column($summary->topRecommendedActions, 'code'));
+    }
+
+    public function test_summary_prefers_primary_product_schema_finding_for_duplicate_root_cause(): void
+    {
+        $summary = $this->summarizer()->summarize($this->product(), [
+            $this->queryVisibility(findings: [
+                $this->finding('page.product_schema_missing', 'medium', evidence: ['productSchemaCandidateCount' => 0]),
+                $this->finding('schema.product_missing', 'high', evidence: ['productSchemaCandidateCount' => 0]),
+            ]),
+        ]);
+
+        self::assertSame(['schema.product_missing'], array_column($summary->topProbableCauses, 'code'));
+        self::assertSame(['schema.product_missing'], array_column($summary->topRecommendedActions, 'code'));
+    }
+
     public function test_repeated_page_noindex_across_queries_appears_once_in_top_probable_causes(): void
     {
         $summary = $this->summarizer()->summarize($this->product(), [

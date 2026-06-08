@@ -146,7 +146,7 @@ final readonly class VisibilityAnalyzer
                 status: $queryVisibility->status,
                 urlMatch: $queryVisibility->urlMatch,
                 matchedResult: $queryVisibility->matchedResult,
-                findings: array_values(array_merge($queryVisibility->findings, $orchestrationFindings, $detectorFindings)),
+                findings: $this->suppressDuplicateFindings(array_values(array_merge($queryVisibility->findings, $orchestrationFindings, $detectorFindings))),
                 warnings: array_values(array_unique(array_merge($queryVisibility->warnings, $warnings))),
             );
             $reportWarnings = array_values(array_unique(array_merge($reportWarnings, $warnings)));
@@ -160,6 +160,70 @@ final readonly class VisibilityAnalyzer
             warnings: array_values(array_unique($reportWarnings)),
             summary: $this->reportSummarizer->summarize($product, $queryVisibilities),
         );
+    }
+
+
+    /**
+     * @param array<int, Finding> $findings
+     * @return array<int, Finding>
+     */
+    private function suppressDuplicateFindings(array $findings): array
+    {
+        return $this->suppressDuplicateFinding(
+            $this->suppressDuplicateFinding(
+                $findings,
+                duplicateCode: 'page.canonical_mismatch',
+                primaryCode: 'canonical.points_to_other_url',
+            ),
+            duplicateCode: 'page.product_schema_missing',
+            primaryCode: 'schema.product_missing',
+        );
+    }
+
+    /**
+     * @param array<int, Finding> $findings
+     * @return array<int, Finding>
+     */
+    private function suppressDuplicateFinding(array $findings, string $duplicateCode, string $primaryCode): array
+    {
+        $duplicate = null;
+        $primaryIndex = null;
+
+        foreach ($findings as $index => $finding) {
+            if ($finding->code === $duplicateCode) {
+                $duplicate = $finding;
+            }
+
+            if ($finding->code === $primaryCode) {
+                $primaryIndex = $index;
+            }
+        }
+
+        if (!$duplicate instanceof Finding || $primaryIndex === null) {
+            return $findings;
+        }
+
+        $primary = $findings[$primaryIndex];
+        $findings[$primaryIndex] = new Finding(
+            code: $primary->code,
+            severity: $primary->severity,
+            confidence: $primary->confidence,
+            message: $primary->message,
+            evidence: $primary->evidence + [
+                'suppressedDuplicateFindings' => [[
+                    'code' => $duplicate->code,
+                    'message' => $duplicate->message,
+                    'evidence' => $duplicate->evidence,
+                    'recommendation' => $duplicate->recommendation,
+                ]],
+            ],
+            recommendation: $primary->recommendation,
+        );
+
+        return array_values(array_filter(
+            $findings,
+            static fn (Finding $finding): bool => $finding->code !== $duplicateCode,
+        ));
     }
 
     /**
