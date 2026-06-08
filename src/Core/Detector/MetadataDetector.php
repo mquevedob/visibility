@@ -45,6 +45,8 @@ final readonly class MetadataDetector implements Detector
         }
 
         if ($parsedPage->offerSchemaCandidates === []) {
+            // Keep the legacy page.* offer finding for now: Phase 1 only suppresses
+            // duplicate Product schema root causes, while Offer evidence remains distinct.
             $findings[] = $this->finding($context, 'page.offer_schema_missing', 'medium', 'The parsed page does not include Offer structured-data candidates.', 'Add valid schema.org Offer structured data for price and availability signals when applicable.');
         }
 
