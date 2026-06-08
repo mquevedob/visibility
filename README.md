@@ -58,6 +58,25 @@ The full example wires the supporting objects explicitly:
 - `VisibilityAnalyzer` uses the static provider, fixture fetcher, URL matcher, page parser, detectors, and summary generation.
 - `JsonReportSerializer` emits deterministic JSON when passed a fixed timestamp.
 
+
+### URL evidence policy
+
+Reports use explicit URL roles so search-result matching, fetching, redirects, expected product targets, and parsed canonical declarations are not conflated:
+
+- `matchedUrl` is the URL found in caller-supplied search-result evidence. It is preserved exactly as supplied by the search provider and is not overwritten with a normalized, expected, final, or canonical URL.
+- `requestedUrl` is the URL sent to the `PageFetcher` by the analyzer.
+- `finalUrl` is the final URL known from fixture or redirect evidence in the `PageSnapshot`.
+- `expectedUrl` is the merchant/product URL supplied on `ProductSubject`.
+- `canonicalUrl` is the canonical URL declared by the parsed page.
+
+Evaluation is deterministic and one-product scoped:
+
+- Visibility matching compares `expectedUrl` and `acceptableUrlVariants` against the preserved `matchedUrl` from supplied search results.
+- Page diagnostics use fetch evidence: `requestedUrl`, `finalUrl`, and page body evidence.
+- Canonical diagnostics compare `canonicalUrl` against `expectedUrl` plus `acceptableUrlVariants`.
+
+The top-level `urlEvidence` report section summarizes these roles for the analyzed product. Query-level `urlMatch` evidence preserves each query's `matchedUrl`, and `pageSnapshot` preserves the fetcher's `requestedUrl` and `finalUrl`.
+
 ### Reading the JSON output
 
 The main output sections are:

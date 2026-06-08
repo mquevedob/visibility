@@ -33,6 +33,24 @@ final class CanonicalDetectorTest extends TestCase
         self::assertSame([], $findings);
     }
 
+    public function test_canonical_mismatch_evidence_lists_expected_url_and_acceptable_variants(): void
+    {
+        $findings = $this->detector()->detect($this->context(
+            acceptableUrlVariants: ['https://merchant.test/products/widget?variant=blue'],
+            parsedPage: $this->parsedPage(canonicalUrl: 'https://merchant.test/products/other-widget'),
+        ));
+        $finding = $this->findingByCode($findings, 'canonical.points_to_other_url');
+
+        self::assertSame('https://merchant.test/products/widget', $finding->evidence['expectedUrl']);
+        self::assertSame(['https://merchant.test/products/widget?variant=blue'], $finding->evidence['acceptableUrlVariants']);
+        self::assertSame('https://merchant.test/products/other-widget', $finding->evidence['canonicalUrl']);
+        self::assertSame([
+            'https://merchant.test/products/widget',
+            'https://merchant.test/products/widget?variant=blue',
+        ], $finding->evidence['normalizedAcceptedUrls']);
+        self::assertSame('canonicalUrl compared against expectedUrl plus acceptableUrlVariants', $finding->evidence['comparisonPolicy']);
+    }
+
     public function test_missing_canonical_emits_missing_finding(): void
     {
         $findings = $this->detector()->detect($this->context(

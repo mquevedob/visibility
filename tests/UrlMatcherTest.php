@@ -32,6 +32,7 @@ final class UrlMatcherTest extends TestCase
         self::assertSame('exact', $match->matchType);
         self::assertSame('https://merchant.test/products/widget', $match->expectedUrl);
         self::assertSame('https://merchant.test/products/widget', $match->matchedUrl);
+        self::assertSame('https://merchant.test/products/widget', $match->evidence['matchedUrl']);
     }
 
     public function test_normalized_scheme_and_host_match(): void
@@ -84,6 +85,8 @@ final class UrlMatcherTest extends TestCase
 
         self::assertTrue($match->matched);
         self::assertSame('normalized', $match->matchType);
+        self::assertSame('https://merchant.test/products/widget?color=red&fbclid=xyz', $match->matchedUrl);
+        self::assertSame('https://merchant.test/products/widget?color=red&fbclid=xyz', $match->evidence['matchedUrl']);
         self::assertSame(
             'https://merchant.test/products/widget?color=red',
             $match->evidence['normalizedExpectedUrl'],
@@ -107,7 +110,7 @@ final class UrlMatcherTest extends TestCase
         );
         self::assertSame(
             'https://merchant.test/products/widget?color=red&size=m',
-            $match->evidence['normalizedResultUrl'],
+            $match->evidence['normalizedMatchedUrl'],
         );
     }
 
@@ -125,6 +128,8 @@ final class UrlMatcherTest extends TestCase
 
         self::assertTrue($match->matched);
         self::assertSame('acceptable_variant', $match->matchType);
+        self::assertSame('https://merchant.test/widget?sku=123', $match->matchedUrl);
+        self::assertSame('https://merchant.test/widget?sku=123', $match->evidence['matchedUrl']);
         self::assertSame('https://merchant.test/widget?sku=123&utm_campaign=spring', $match->evidence['acceptableUrlVariant']);
     }
 

@@ -121,6 +121,14 @@ final class VisibilityResultDetector implements Detector
                 'limitations' => $context->resultSet->limitations,
             ],
             'urlMatch' => $context->urlMatch->toArray(),
+            'urlEvidence' => [
+                'expectedUrl' => $context->product->expectedUrl,
+                'acceptableUrlVariants' => $context->product->acceptableUrlVariants,
+                'matchedUrl' => $context->urlMatch->matchedUrl,
+                'requestedUrl' => $context->pageSnapshot?->requestedUrl,
+                'finalUrl' => $context->pageSnapshot?->finalUrl,
+                'canonicalUrl' => $context->parsedPage?->canonicalUrl,
+            ],
         ];
     }
 

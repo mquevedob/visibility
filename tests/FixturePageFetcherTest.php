@@ -136,6 +136,30 @@ final class FixturePageFetcherTest extends TestCase
         self::assertSame(['No page fixture was configured for requested URL: ' . $url], $result->warnings);
     }
 
+
+    public function test_normalized_fixture_fallback_is_not_used_for_unconfigured_requested_url(): void
+    {
+        $configuredUrl = 'https://merchant.test/products/widget';
+        $requestedUrl = 'https://merchant.test/products/widget?utm_source=newsletter';
+        $fetcher = new FixturePageFetcher([
+            $configuredUrl => [
+                'finalUrl' => $configuredUrl,
+                'statusCode' => 200,
+                'headers' => ['content-type' => ['text/html']],
+                'body' => '<html><body>Widget</body></html>',
+                'contentType' => 'text/html',
+            ],
+        ]);
+
+        $result = $fetcher->fetch($requestedUrl);
+
+        self::assertSame($requestedUrl, $result->requestedUrl);
+        self::assertNull($result->finalUrl);
+        self::assertNull($result->statusCode);
+        self::assertSame('unknown', $result->failureType);
+        self::assertSame(['No page fixture was configured for requested URL: ' . $requestedUrl], $result->warnings);
+    }
+
     public function test_non_html_content_type_is_returned(): void
     {
         $url = 'https://merchant.test/products/widget.json';

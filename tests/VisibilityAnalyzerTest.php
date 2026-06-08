@@ -77,6 +77,50 @@ final class VisibilityAnalyzerTest extends TestCase
 
         self::assertSame(['https://merchant.test/products/widget?utm_source=test'], $fetcher->requestedUrls);
         self::assertSame('https://merchant.test/products/widget?utm_source=test', $report->pageSnapshot?->requestedUrl);
+        self::assertSame('https://merchant.test/products/widget?utm_source=test', $report->queryVisibilities[0]->urlMatch->matchedUrl);
+        self::assertSame('https://merchant.test/products/widget?utm_source=test', $report->queryVisibilities[0]->findings[0]->evidence['urlEvidence']['matchedUrl']);
+        self::assertSame('https://merchant.test/products/widget?utm_source=test', $report->queryVisibilities[0]->findings[0]->evidence['urlEvidence']['requestedUrl']);
+        self::assertSame('https://merchant.test/products/widget?utm_source=test', $report->queryVisibilities[0]->findings[0]->evidence['urlEvidence']['finalUrl']);
+    }
+
+    public function test_analyzer_preserves_redirect_final_url_evidence_separately_from_matched_and_requested_urls(): void
+    {
+        $query = $this->query();
+        $matchedUrl = 'https://merchant.test/products/widget?utm_source=test';
+        $finalUrl = 'https://merchant.test/products/widget';
+        $report = $this->analyzer(
+            resultSets: [$this->resultSet($query, [new SearchResult(position: 1, url: $matchedUrl)])],
+            pageFetcher: new FixturePageFetcher([
+                $matchedUrl => [
+                    'finalUrl' => $finalUrl,
+                    'statusCode' => 200,
+                    'headers' => ['content-type' => ['text/html']],
+                    'body' => '<html><head><link rel="canonical" href="https://merchant.test/products/widget"></head><body><h1>Widget</h1></body></html>',
+                    'contentType' => 'text/html',
+                    'redirects' => [[
+                        'from' => $matchedUrl,
+                        'to' => $finalUrl,
+                        'statusCode' => 301,
+                    ]],
+                ],
+            ]),
+            pageParser: new VisibilityAnalyzerParsedPageParser(new ParsedPage(
+                url: $finalUrl,
+                canonicalUrl: $finalUrl,
+                h1: 'Widget',
+                productSchemaCandidates: [['@type' => 'Product']],
+                offerSchemaCandidates: [['@type' => 'Offer']],
+            )),
+        )->analyze($this->product(), [$query]);
+
+        self::assertSame($matchedUrl, $report->queryVisibilities[0]->urlMatch->matchedUrl);
+        self::assertSame($matchedUrl, $report->pageSnapshot?->requestedUrl);
+        self::assertSame($finalUrl, $report->pageSnapshot?->finalUrl);
+        self::assertSame($finalUrl, $report->parsedPage?->canonicalUrl);
+        self::assertSame($matchedUrl, $report->toArray()['urlEvidence']['matchedUrls'][0]);
+        self::assertSame($matchedUrl, $report->toArray()['urlEvidence']['requestedUrl']);
+        self::assertSame($finalUrl, $report->toArray()['urlEvidence']['finalUrl']);
+        self::assertSame($finalUrl, $report->toArray()['urlEvidence']['canonicalUrl']);
     }
 
     public function test_analyzer_falls_back_to_expected_url_for_page_fetch_when_no_match_exists(): void

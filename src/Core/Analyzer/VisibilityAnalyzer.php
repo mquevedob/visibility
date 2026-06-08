@@ -298,7 +298,7 @@ final readonly class VisibilityAnalyzer
             evidence: [
                 'product' => ['expectedUrl' => $product->expectedUrl],
                 'query' => $query->toArray(),
-                'urlToFetch' => $urlToFetch,
+                'requestedUrl' => $urlToFetch,
                 'reason' => 'page_fetcher_not_supplied',
             ],
             recommendation: 'Supply a fixture-backed or caller-injected PageFetcher to include page-level diagnostics.',

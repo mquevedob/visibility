@@ -87,6 +87,7 @@ final readonly class VisibilityReport
                 static fn (QueryVisibility $queryVisibility): array => $queryVisibility->toArray(),
                 $this->queryVisibilities,
             ),
+            'urlEvidence' => $this->urlEvidence(),
             'pageSnapshot' => $this->pageSnapshot?->toArray(),
             'parsedPage' => $this->parsedPage?->toArray(),
             'summaryFindings' => array_map(
@@ -96,6 +97,30 @@ final readonly class VisibilityReport
             'warnings' => $this->warnings,
             'generatedAt' => $this->generatedAt,
             'summary' => $this->summary?->toArray(),
+        ];
+    }
+
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function urlEvidence(): array
+    {
+        $matchedUrls = [];
+
+        foreach ($this->queryVisibilities as $queryVisibility) {
+            if ($queryVisibility->urlMatch->matchedUrl !== null) {
+                $matchedUrls[] = $queryVisibility->urlMatch->matchedUrl;
+            }
+        }
+
+        return [
+            'expectedUrl' => $this->product->expectedUrl,
+            'acceptableUrlVariants' => $this->product->acceptableUrlVariants,
+            'matchedUrls' => array_values(array_unique($matchedUrls)),
+            'requestedUrl' => $this->pageSnapshot?->requestedUrl,
+            'finalUrl' => $this->pageSnapshot?->finalUrl,
+            'canonicalUrl' => $this->parsedPage?->canonicalUrl,
         ];
     }
 

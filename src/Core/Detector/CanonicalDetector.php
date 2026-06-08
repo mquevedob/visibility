@@ -254,6 +254,8 @@ final readonly class CanonicalDetector implements Detector
                 fn (string $url): string => $this->normalizer->normalize($url),
                 $context->product->acceptableUrlVariants,
             ))),
+            'normalizedAcceptedUrls' => $this->normalizedAcceptedUrls($context),
+            'comparisonPolicy' => 'canonicalUrl compared against expectedUrl plus acceptableUrlVariants',
         ];
     }
 }

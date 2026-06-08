@@ -46,7 +46,8 @@
                     "reason": "No supplied search result URL matched the expected URL or acceptable URL variants.",
                     "normalizedExpectedUrl": "https://example.test/products/aurora-trail-shoe",
                     "normalizedAcceptableUrlVariants": [],
-                    "resultCount": 3
+                    "resultCount": 3,
+                    "expectedUrl": "https://example.test/products/aurora-trail-shoe"
                 }
             },
             "matchedResult": null,
@@ -81,7 +82,30 @@
                         },
                         "expectedVisibility": true,
                         "expectedVisibilityReason": "High-value launch product should appear for branded category demand.",
-                        "queryPriority": "critical"
+                        "queryPriority": "critical",
+                        "urlMatch": {
+                            "matched": false,
+                            "matchType": "none",
+                            "expectedUrl": "https://example.test/products/aurora-trail-shoe",
+                            "matchedUrl": null,
+                            "matchedPosition": null,
+                            "matchedResult": null,
+                            "evidence": {
+                                "reason": "No supplied search result URL matched the expected URL or acceptable URL variants.",
+                                "normalizedExpectedUrl": "https://example.test/products/aurora-trail-shoe",
+                                "normalizedAcceptableUrlVariants": [],
+                                "resultCount": 3,
+                                "expectedUrl": "https://example.test/products/aurora-trail-shoe"
+                            }
+                        },
+                        "urlEvidence": {
+                            "expectedUrl": "https://example.test/products/aurora-trail-shoe",
+                            "acceptableUrlVariants": [],
+                            "matchedUrl": null,
+                            "requestedUrl": "https://example.test/products/aurora-trail-shoe",
+                            "finalUrl": "https://example.test/products/aurora-trail-shoe",
+                            "canonicalUrl": "https://example.test/collections/trail-running-shoes"
+                        }
                     },
                     "recommendation": "Investigate why the product is absent for this expected-visible query."
                 },
@@ -112,15 +136,21 @@
                     "confidence": 0.95,
                     "message": "A canonical URL does not match the expected product URL or its acceptable variants.",
                     "evidence": {
-                        "product": {
-                            "expectedUrl": "https://example.test/products/aurora-trail-shoe",
-                            "acceptableUrlVariants": []
-                        },
-                        "parsedPage": {
-                            "url": "https://example.test/products/aurora-trail-shoe",
-                            "canonicalUrl": "https://example.test/collections/trail-running-shoes"
-                        },
+                        "expectedUrl": "https://example.test/products/aurora-trail-shoe",
+                        "acceptableUrlVariants": [],
+                        "canonicalUrl": "https://example.test/collections/trail-running-shoes",
+                        "canonicalUrls": [
+                            "https://example.test/collections/trail-running-shoes"
+                        ],
+                        "normalizedExpectedUrl": "https://example.test/products/aurora-trail-shoe",
+                        "normalizedAcceptableUrlVariants": [],
+                        "normalizedAcceptedUrls": [
+                            "https://example.test/products/aurora-trail-shoe"
+                        ],
+                        "comparisonPolicy": "canonicalUrl compared against expectedUrl plus acceptableUrlVariants",
                         "offendingCanonicalUrl": "https://example.test/collections/trail-running-shoes",
+                        "normalizedCanonicalUrl": "https://example.test/collections/trail-running-shoes",
+                        "normalizedOffendingCanonicalUrl": "https://example.test/collections/trail-running-shoes",
                         "reason": "canonical_not_in_expected_or_acceptable_urls"
                     },
                     "recommendation": "Point every canonical URL at the expected product URL or an explicitly acceptable product URL variant."
@@ -313,5 +343,13 @@
         "notVisibleCount": 1,
         "uncertainCount": 0,
         "highSeverityFindingCount": 4
+    },
+    "urlEvidence": {
+        "expectedUrl": "https://example.test/products/aurora-trail-shoe",
+        "acceptableUrlVariants": [],
+        "matchedUrls": [],
+        "requestedUrl": "https://example.test/products/aurora-trail-shoe",
+        "finalUrl": "https://example.test/products/aurora-trail-shoe",
+        "canonicalUrl": "https://example.test/collections/trail-running-shoes"
     }
 }

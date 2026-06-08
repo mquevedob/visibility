@@ -33,7 +33,7 @@ final readonly class DefaultUrlMatcher implements UrlMatcher
                     evidence: [
                         'reason' => 'Raw expected URL equals raw result URL.',
                         'expectedUrl' => $expectedUrl,
-                        'resultUrl' => $result->url,
+                        'matchedUrl' => $result->url,
                     ],
                 );
             }
@@ -47,8 +47,10 @@ final readonly class DefaultUrlMatcher implements UrlMatcher
                     result: $result,
                     evidence: [
                         'reason' => 'Normalized expected URL equals normalized result URL.',
+                        'expectedUrl' => $expectedUrl,
+                        'matchedUrl' => $result->url,
                         'normalizedExpectedUrl' => $normalizedExpectedUrl,
-                        'normalizedResultUrl' => $normalizedResultUrl,
+                        'normalizedMatchedUrl' => $normalizedResultUrl,
                     ],
                 );
             }
@@ -61,9 +63,11 @@ final readonly class DefaultUrlMatcher implements UrlMatcher
                         result: $result,
                         evidence: [
                             'reason' => 'Normalized acceptable URL variant equals normalized result URL.',
+                            'expectedUrl' => $expectedUrl,
+                            'matchedUrl' => $result->url,
                             'acceptableUrlVariant' => $product->acceptableUrlVariants[$index],
                             'normalizedAcceptableUrlVariant' => $normalizedVariant,
-                            'normalizedResultUrl' => $normalizedResultUrl,
+                            'normalizedMatchedUrl' => $normalizedResultUrl,
                         ],
                     );
                 }
@@ -76,6 +80,7 @@ final readonly class DefaultUrlMatcher implements UrlMatcher
             expectedUrl: $expectedUrl,
             evidence: [
                 'reason' => 'No supplied search result URL matched the expected URL or acceptable URL variants.',
+                'expectedUrl' => $expectedUrl,
                 'normalizedExpectedUrl' => $normalizedExpectedUrl,
                 'normalizedAcceptableUrlVariants' => $normalizedAcceptableVariants,
                 'resultCount' => count($resultSet->results),

@@ -113,6 +113,17 @@ final class JsonReportSerializerTest extends TestCase
         self::assertSame('Parsed meta description is empty.', $queryVisibility['findings'][0]['evidence']['parsedPage']);
     }
 
+    public function test_json_contains_url_evidence_policy_roles(): void
+    {
+        $payload = $this->serializedPayload();
+
+        self::assertSame('https://merchant.test/products/café-widget', $payload['urlEvidence']['expectedUrl']);
+        self::assertSame(['https://merchant.test/products/café-widget'], $payload['urlEvidence']['matchedUrls']);
+        self::assertSame('https://merchant.test/products/café-widget', $payload['urlEvidence']['requestedUrl']);
+        self::assertSame('https://merchant.test/products/café-widget', $payload['urlEvidence']['finalUrl']);
+        self::assertSame('https://merchant.test/products/café-widget', $payload['urlEvidence']['canonicalUrl']);
+    }
+
     public function test_json_contains_page_snapshot_evidence(): void
     {
         $payload = $this->serializedPayload();
