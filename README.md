@@ -98,14 +98,21 @@ The main output sections are:
 - [MVP definition](docs/mvp.md)
 - [Architecture](docs/architecture.md)
 - [v0.1 roadmap](docs/roadmap/v0.1.md)
+
 ## Minimal scenario CLI
 
 The repository also includes a small plain-PHP developer CLI for running deterministic local scenario JSON files without creating a new PHP script for each scenario.
 
-After installing dependencies in your own environment, Composer exposes the bin entry as:
+From a repository checkout, run the local bin directly:
 
 ```sh
-vendor/bin/visibility analyze examples/scenarios/not-visible.json
+bin/visibility analyze examples/scenarios/not-visible.json
+```
+
+When installed as a dependency through Composer, run the Composer-exposed bin:
+
+```sh
+vendor/bin/visibility analyze <scenario-json-path>
 ```
 
 The command prints the existing `JsonReportSerializer` JSON report format to stdout. Errors, such as an unknown command, invalid JSON, or a missing fixture file, are written to stderr and return a non-zero exit code.

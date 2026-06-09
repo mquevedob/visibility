@@ -6,6 +6,8 @@ declare(strict_types=1);
 use VisibilityDetector\Cli\ScenarioLoader;
 use VisibilityDetector\Cli\VisibilityCli;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoloadPath = $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+
+require_once $autoloadPath;
 
 exit((new VisibilityCli(new ScenarioLoader(dirname(__DIR__))))->run($argv));
