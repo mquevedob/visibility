@@ -15,8 +15,11 @@ final readonly class JsonReportSerializer implements ReportSerializer
         | JSON_UNESCAPED_SLASHES
         | JSON_UNESCAPED_UNICODE;
 
-    public function __construct(private DiagnosticSummaryProjector $diagnosticSummaryProjector = new DiagnosticSummaryProjector())
+    private DiagnosticSummaryProjector $diagnosticSummaryProjector;
+
+    public function __construct(?DiagnosticSummaryProjector $diagnosticSummaryProjector = null)
     {
+        $this->diagnosticSummaryProjector = $diagnosticSummaryProjector ?? new DiagnosticSummaryProjector();
     }
 
     /**
